@@ -5,16 +5,30 @@ import {
   FileUploadForm, 
   ProgressSteps, 
   IntermediateResults, 
-  FinalResults, 
-  ErrorDisplay 
+  ErrorDisplay,
+  EnhancedFinalResults, // Use the enhanced version instead of FinalResults
+  BlockSizeSelector,
+  FilterSelector,
+  QualityMetrics
 } from './components';
 
 import { 
-  uploadImages, 
-  preprocessImages, 
-  generateMosaic, 
-  getJobStatus, 
-  generateMosaicLegacy, 
+  uploadImages,
+  uploadElementImage,
+  uploadTargetImage, 
+  preprocessImages,
+  setBlockSize,
+  getMultiresolutionPreview, 
+  generateMosaic,
+  generateMultiresolutionMosaics, 
+  getJobStatus,
+  generateMosaicLegacy,
+  applyFilter,
+  getAvailableFilters,
+  getFilterPreviews,
+  compareFilters,
+  getQualityMetrics,
+  compareMetrics, 
   combineOutputs, 
   pollJobStatus 
 } from './services';
@@ -237,7 +251,7 @@ export default function Home() {
               <>
                 <IntermediateResults outputs={allOutputs} />
                 {jobStatus?.status === 'completed' && (
-                  <FinalResults outputs={jobStatus.final_outputs} />
+                  <EnhancedFinalResults outputs={jobStatus.final_outputs} jobId={jobId} />
                 )}
               </>
             )}
