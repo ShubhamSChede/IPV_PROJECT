@@ -395,59 +395,63 @@ export function BlockSizeSelector({ jobId, onBlockSizeChange, loading }) {
   );
 }
 
-// Component for Filter Selection
+// Updated FilterSelector Component
 export function FilterSelector({ jobId, onFilterApply, loading }) {
   const [filters, setFilters] = useState([]);
   const [selectedFilter, setSelectedFilter] = useState("none");
   const [filterPreviews, setFilterPreviews] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
   
- // In components.js - Update the filters state initialization in FilterSelector
-useEffect(() => {
-  const fetchFilters = async () => {
-    try {
-      const result = await getAvailableFilters();
-      
-      // Normalize the response format - this is the key fix
-      if (result.filters && typeof result.filters === 'object' && !Array.isArray(result.filters)) {
-        // Convert object format { sepia: "Sepia Tone", ... } to array format
-        const filtersArray = Object.entries(result.filters).map(([id, name]) => ({
-          name: id,
-          displayName: name
-        }));
-        setFilters(filtersArray);
-      } else if (Array.isArray(result.filters)) {
-        setFilters(result.filters);
-      } else {
-        console.warn('Unexpected filter data format:', result);
-        // Fallback to default filters
+  // Fetch available filters
+  useEffect(() => {
+    const fetchFilters = async () => {
+      try {
+        const result = await getAvailableFilters();
+        
+        // Normalize the response format
+        if (result.filters && typeof result.filters === 'object' && !Array.isArray(result.filters)) {
+          const filtersArray = Object.entries(result.filters).map(([id, name]) => ({
+            name: id,
+            displayName: name
+          }));
+          setFilters(filtersArray);
+        } else if (Array.isArray(result.filters)) {
+          setFilters(result.filters);
+        } else {
+          console.warn('Unexpected filter data format:', result);
+          // Fallback to default filters
+          setFilters([
+            { name: 'none', displayName: 'No Filter' },
+            { name: 'sepia', displayName: 'Sepia' },
+            { name: 'grayscale', displayName: 'Grayscale' }
+          ]);
+        }
+      } catch (error) {
+        console.error("Failed to load filters:", error);
+        // Set default filters
         setFilters([
           { name: 'none', displayName: 'No Filter' },
           { name: 'sepia', displayName: 'Sepia' },
           { name: 'grayscale', displayName: 'Grayscale' }
         ]);
       }
-    } catch (error) {
-      console.error("Failed to load filters:", error);
-      // Set default filters
-      setFilters([
-        { name: 'none', displayName: 'No Filter' },
-        { name: 'sepia', displayName: 'Sepia' },
-        { name: 'grayscale', displayName: 'Grayscale' }
-      ]);
-    }
-  };
+    };
+    
+    fetchFilters();
+  }, []);
   
-  fetchFilters();
-}, []);
-  
+  // Fetch filter previews
   useEffect(() => {
     if (jobId) {
       const fetchFilterPreviews = async () => {
+        setIsLoading(true);
         try {
           const result = await getFilterPreviews(jobId);
           setFilterPreviews(result.previews);
         } catch (error) {
           console.error("Failed to load filter previews:", error);
+        } finally {
+          setIsLoading(false);
         }
       };
       
@@ -471,61 +475,54 @@ useEffect(() => {
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-      <h3 className="text-lg font-medium mb-3 text-gray-700">Apply Filters</h3>
+      <h3 className="text-lg font-medium mb-3 text-gray-700">Available Filters</h3>
       
-      <div className="flex flex-wrap gap-2 mb-4">
-        {Array.isArray(filters) && filters.map((filter) => {
-          const filterName = filter.name || filter;
-          return (
-            <button
-              key={filterName}
-              onClick={() => handleFilterChange(filterName)}
-              disabled={loading}
-              className={`px-4 py-2 rounded-md text-sm font-medium ${
-                selectedFilter === filterName
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-              } transition-colors ${loading ? 'opacity-50' : ''}`}
-            >
-              {loading && selectedFilter === filterName ? (
-                <span className="inline-flex items-center">
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Applying...
-                </span>
-              ) : (
-                filterName.charAt(0).toUpperCase() + filterName.slice(1)
-              )}
-            </button>
-          );
-        })}
-        
-        {/* Show message if no filters are available */}
-        {(!filters || filters.length === 0) && (
-          <div className="text-gray-500 text-sm py-2">No filters available</div>
-        )}
-      </div>
+      {isLoading && (
+        <div className="flex justify-center items-center py-8">
+          <svg className="animate-spin h-8 w-8 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span className="ml-2 text-gray-600">Loading filter previews...</span>
+        </div>
+      )}
       
-      {filterPreviews && (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      {(!filterPreviews || Object.keys(filterPreviews).length === 0) && !isLoading && (
+        <div className="text-gray-500 text-center py-4">
+          No filter previews available
+        </div>
+      )}
+      
+      {filterPreviews && Object.keys(filterPreviews).length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {Object.entries(filterPreviews).map(([filter, url]) => (
             <div 
               key={filter} 
-              className={`border rounded overflow-hidden cursor-pointer ${
-                selectedFilter === filter ? 'ring-2 ring-indigo-500' : ''
+              className={`bg-white border rounded-lg overflow-hidden cursor-pointer transition-all hover:shadow-md ${
+                selectedFilter === filter ? 'ring-2 ring-indigo-500 shadow-md transform scale-[1.02]' : ''
               }`}
               onClick={() => handleFilterChange(filter)}
             >
-              <div className="p-2 bg-gray-50 text-center text-sm font-medium">
+              <div className="relative aspect-square overflow-hidden">
+                <img 
+                  src={`http://localhost:5000${url}`}
+                  alt={`${filter} filter preview`}
+                  className="w-full h-full object-cover"
+                />
+                {loading && selectedFilter === filter && (
+                  <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
+                    <svg className="animate-spin h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  </div>
+                )}
+              </div>
+              <div className={`p-2 text-center text-sm font-medium ${
+                selectedFilter === filter ? 'bg-indigo-600 text-white' : 'bg-gray-50 text-gray-800'
+              }`}>
                 {filter.charAt(0).toUpperCase() + filter.slice(1)}
               </div>
-              <img 
-                src={`http://localhost:5000${url}`}
-                alt={`${filter} filter preview`}
-                className="w-full h-auto"
-              />
             </div>
           ))}
         </div>
@@ -615,13 +612,12 @@ export function QualityMetrics({ jobId }) {
   );
 }
 
-// Enhanced FinalResults component with filter and multiresolution options
+// Enhanced FinalResults component without block size selection
 export function EnhancedFinalResults({ outputs: initialOutputs, jobId }) {
   // Use local state to manage outputs
   const [outputs, setOutputs] = useState(initialOutputs || {});
   const [selectedView, setSelectedView] = useState('dynamic');
   const [filterName, setFilterName] = useState(null);
-  const [blockSize, setBlockSize] = useState(null);
   const [isApplyingChanges, setIsApplyingChanges] = useState(false);
   
   // Update local state when props change
@@ -666,34 +662,6 @@ export function EnhancedFinalResults({ outputs: initialOutputs, jobId }) {
     }
   };
   
-  const handleBlockSizeChange = async (size) => {
-    if (!jobId || size === blockSize || isApplyingChanges) return;
-    
-    setIsApplyingChanges(true);
-    try {
-      console.log(`Setting block size to ${size}`);
-      await setBlockSize(jobId, size);
-      setBlockSize(size);
-      
-      console.log('Regenerating mosaic with new block size');
-      const result = await generateMosaic(jobId);
-      
-      // Update local state with new outputs
-      if (result.final_outputs) {
-        setOutputs(prevOutputs => ({
-          ...prevOutputs,
-          ...result.final_outputs
-        }));
-      }
-      
-      console.log('Block size change and regeneration complete');
-    } catch (error) {
-      console.error("Failed to apply block size change:", error);
-    } finally {
-      setIsApplyingChanges(false);
-    }
-  };
-  
   if (!outputs || Object.keys(outputs).length === 0) {
     return null;
   }
@@ -732,18 +700,11 @@ export function EnhancedFinalResults({ outputs: initialOutputs, jobId }) {
   return (
     <>
       {jobId && (
-        <>
-          <BlockSizeSelector 
-            jobId={jobId} 
-            onBlockSizeChange={handleBlockSizeChange} 
-            loading={isApplyingChanges} 
-          />
-          <FilterSelector 
-            jobId={jobId} 
-            onFilterApply={handleFilterApply} 
-            loading={isApplyingChanges} 
-          />
-        </>
+        <FilterSelector 
+          jobId={jobId} 
+          onFilterApply={handleFilterApply} 
+          loading={isApplyingChanges} 
+        />
       )}
       
       <div className="bg-white p-6 rounded-lg shadow-md">
