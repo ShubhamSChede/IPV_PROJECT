@@ -564,11 +564,11 @@ export function QualityMetrics({ jobId }) {
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md mt-6">
-      <h3 className="text-lg font-medium mb-3 text-gray-700">Quality Metrics</h3>
+      <h3 className="text-lg font-medium mb-3 text-gray-900">Quality Metrics</h3>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-gray-50 p-4 rounded-lg border">
-          <div className="text-sm font-medium text-gray-500 mb-1">SSIM</div>
+          <div className="text-sm font-medium text-gray-900 mb-1">SSIM</div>
           <div className="text-2xl font-bold">
             {typeof metrics.ssim === 'number' ? metrics.ssim.toFixed(4) : 'N/A'}
           </div>
@@ -578,7 +578,7 @@ export function QualityMetrics({ jobId }) {
         </div>
         
         <div className="bg-gray-50 p-4 rounded-lg border">
-          <div className="text-sm font-medium text-gray-500 mb-1">MSE</div>
+          <div className="text-sm font-medium text-gray-900 mb-1">MSE</div>
           <div className="text-2xl font-bold">
             {typeof metrics.mse === 'number' ? metrics.mse.toFixed(2) : 'N/A'}
           </div>
@@ -588,7 +588,7 @@ export function QualityMetrics({ jobId }) {
         </div>
         
         <div className="bg-gray-50 p-4 rounded-lg border">
-          <div className="text-sm font-medium text-gray-500 mb-1">PSNR</div>
+          <div className="text-sm font-medium text-gray-900 mb-1">PSNR</div>
           <div className="text-2xl font-bold">
             {typeof metrics.psnr === 'number' ? metrics.psnr.toFixed(2) + ' dB' : 'N/A'}
           </div>
