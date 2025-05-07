@@ -249,9 +249,11 @@ export default function Home() {
               <FileUploadForm onSubmit={handleStepByStepUpload} loading={loading} />
             ) : (
               <>
-                <IntermediateResults outputs={allOutputs} />
+                {/* Pass jobStatus to IntermediateResults for enhanced visualization */}
+                <IntermediateResults outputs={allOutputs} jobStatus={jobStatus} />
+                
                 {jobStatus?.status === 'completed' && (
-                  <EnhancedFinalResults outputs={jobStatus.final_outputs} jobId={jobId} />
+                  <EnhancedFinalResults outputs={allOutputs} jobId={jobId} />
                 )}
               </>
             )}

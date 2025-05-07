@@ -147,16 +147,28 @@ export function ProgressSteps({ currentStep, jobStatus }) {
   );
 }
 
-// Component to display intermediate results
-export function IntermediateResults({ outputs }) {
+// Component to display intermediate results with enhanced visualization
+export function IntermediateResults({ outputs, jobStatus }) {
   if (!outputs || Object.keys(outputs).length === 0) {
     return null;
   }
 
-  // Group outputs logically
+  // Group outputs logically with enhanced details
   const groups = {
-    'Input Images': ['element_url', 'big_url', 'gray_element', 'gray_big'],
-    'Processing Steps': ['resized_element', 'resized_big', 'adjusted_big', 'simple_mosaic', 'partial_mosaic']
+    'Input Images': ['element_url', 'big_url'],
+    'Processed Images': ['resized_element', 'resized_big', 'adjusted_big'],
+    'Generated Mosaics': ['simple_mosaic', 'partial_mosaic']
+  };
+
+  // Image type explanations
+  const imageDescriptions = {
+    'element_url': 'The small image used as building blocks for the mosaic',
+    'big_url': 'The target image that will be recreated using element blocks',
+    'resized_element': 'Element image resized to optimize processing',
+    'resized_big': 'Target image resized to optimize processing',
+    'adjusted_big': 'Target image with dimensions adjusted to fit the block grid',
+    'simple_mosaic': 'Simple tiling of element images without color adjustment',
+    'partial_mosaic': 'Partial rendering of the mosaic during generation'
   };
 
   // Filter outputs based on what's available
@@ -164,7 +176,8 @@ export function IntermediateResults({ outputs }) {
   Object.entries(groups).forEach(([groupName, keys]) => {
     const availableOutputs = keys.filter(key => outputs[key]).map(key => ({
       key,
-      url: outputs[key]
+      url: outputs[key],
+      description: imageDescriptions[key] || ''
     }));
     
     if (availableOutputs.length > 0) {
@@ -174,14 +187,17 @@ export function IntermediateResults({ outputs }) {
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-      <h2 className="text-xl font-semibold mb-4 text-gray-800">Intermediate Results</h2>
+      <h2 className="text-xl font-semibold mb-4 text-gray-800">Processing Pipeline</h2>
+      
+      {/* Display processing details if available */}
+      {jobStatus && <ProcessingDetails jobStatus={jobStatus} />}
       
       {Object.entries(filteredGroups).map(([groupName, items]) => (
         <div key={groupName} className="mb-6">
-          <h3 className="text-lg font-medium mb-3 text-gray-700">{groupName}</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <h3 className="text-lg font-medium mb-3 text-gray-700 border-b pb-1">{groupName}</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {items.map(item => (
-              <div key={item.key} className="border rounded-lg overflow-hidden shadow-sm">
+              <div key={item.key} className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                 <h4 className="text-sm font-medium p-2 bg-gray-50 border-b text-center">
                   {item.key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
                 </h4>
@@ -189,9 +205,14 @@ export function IntermediateResults({ outputs }) {
                   <img 
                     src={`http://localhost:5000${item.url}`}
                     alt={item.key}
-                    className="w-full h-auto rounded"
+                    className=" rounded"
                   />
                 </div>
+                {item.description && (
+                  <div className="px-2 pb-2 text-xs text-gray-600">
+                    {item.description}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -218,7 +239,7 @@ export function FinalResults({ outputs }) {
             <img 
               src={`http://localhost:5000${outputs.simple_mosaic}`}
               alt="Simple Mosaic"
-              className="w-full h-auto rounded"
+              className="rounded"
             />
           </div>
           <div className="px-4 pb-4">
@@ -227,7 +248,7 @@ export function FinalResults({ outputs }) {
               download
               target="_blank"
               rel="noopener noreferrer"
-              className="block w-full text-center py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded transition duration-150 ease-in-out"
+              className="block text-center py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded transition duration-150 ease-in-out"
             >
               Download
             </a>
@@ -240,7 +261,7 @@ export function FinalResults({ outputs }) {
             <img 
               src={`http://localhost:5000${outputs.mosaic}`}
               alt="Dynamic Mosaic"
-              className="w-full h-auto rounded"
+              className=" h-auto rounded"
             />
           </div>
           <div className="px-4 pb-4">
@@ -249,7 +270,7 @@ export function FinalResults({ outputs }) {
               download
               target="_blank"
               rel="noopener noreferrer"
-              className="block w-full text-center py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded transition duration-150 ease-in-out"
+              className="block text-center py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded transition duration-150 ease-in-out"
             >
               Download
             </a>
@@ -385,7 +406,7 @@ export function BlockSizeSelector({ jobId, onBlockSizeChange, loading }) {
               <img 
                 src={`http://localhost:5000${urls.mosaic}`}
                 alt={`Preview at ${size}x${size}`}
-                className="w-full h-auto"
+                className=""
               />
             </div>
           ))}
@@ -507,7 +528,7 @@ export function FilterSelector({ jobId, onFilterApply, loading }) {
                 <img 
                   src={`http://localhost:5000${url}`}
                   alt={`${filter} filter preview`}
-                  className="w-full h-full object-cover"
+                  className="object-cover"
                 />
                 {loading && selectedFilter === filter && (
                   <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
@@ -604,7 +625,7 @@ export function QualityMetrics({ jobId }) {
           <img 
             src={`http://localhost:5000${metrics.comparison.chart_url}`}
             alt="Metrics comparison chart"
-            className="w-full h-auto border rounded-lg"
+            className=" border rounded-lg"
           />
         </div>
       )}
@@ -612,7 +633,7 @@ export function QualityMetrics({ jobId }) {
   );
 }
 
-// Enhanced FinalResults component without block size selection
+// Enhanced FinalResults component with detailed information display
 export function EnhancedFinalResults({ outputs: initialOutputs, jobId }) {
   // Use local state to manage outputs
   const [outputs, setOutputs] = useState(initialOutputs || {});
@@ -627,6 +648,7 @@ export function EnhancedFinalResults({ outputs: initialOutputs, jobId }) {
     }
   }, [initialOutputs]);
   
+  // Handle filter application
   const handleFilterApply = async (filter) => {
     if (!jobId || filter === filterName || isApplyingChanges) return;
     
@@ -666,16 +688,15 @@ export function EnhancedFinalResults({ outputs: initialOutputs, jobId }) {
     return null;
   }
 
+  // Image selection logic
   const getImageUrl = () => {
     switch (selectedView) {
       case 'simple':
         return outputs.simple_mosaic;
       case 'filtered':
-        // If filtered image exists, show it. Otherwise fall back to original
         if (outputs.filtered_mosaic) {
           return outputs.filtered_mosaic;
         } else {
-          // If switching to filtered view but no filtered image yet, show dynamic instead
           setSelectedView('dynamic');
           return outputs.mosaic;
         }
@@ -685,6 +706,7 @@ export function EnhancedFinalResults({ outputs: initialOutputs, jobId }) {
     }
   };
   
+  // Title based on selected view
   const getImageTitle = () => {
     switch (selectedView) {
       case 'simple':
@@ -694,6 +716,19 @@ export function EnhancedFinalResults({ outputs: initialOutputs, jobId }) {
       case 'dynamic':
       default:
         return 'Dynamic Mosaic';
+    }
+  };
+
+  // Image explanation based on selected view
+  const getImageExplanation = () => {
+    switch (selectedView) {
+      case 'simple':
+        return 'A basic mosaic created by simply repeating the element image without any color adjustments';
+      case 'filtered':
+        return `The dynamic mosaic with ${filterName || 'no'} filter effect applied as post-processing`;
+      case 'dynamic':
+      default:
+        return 'A mosaic where each element block has been color-adjusted to match the corresponding area of the target image';
     }
   };
 
@@ -751,14 +786,17 @@ export function EnhancedFinalResults({ outputs: initialOutputs, jobId }) {
           </div>
         </div>
         
-        <div className="border rounded-lg overflow-hidden shadow-sm">
+        <div className="border rounded-lg overflow-hidden shadow-sm mb-6">
           <h3 className="text-lg font-medium p-4 bg-gray-50 border-b text-center">{getImageTitle()}</h3>
           <div className="p-4">
             <img 
               src={`http://localhost:5000${getImageUrl()}`}
               alt={getImageTitle()}
-              className="w-full h-auto rounded"
+              className=" rounded"
             />
+          </div>
+          <div className="px-4 pb-2 text-sm text-center text-gray-600">
+            {getImageExplanation()}
           </div>
           <div className="px-4 pb-4">
             <a 
@@ -766,7 +804,7 @@ export function EnhancedFinalResults({ outputs: initialOutputs, jobId }) {
               download
               target="_blank"
               rel="noopener noreferrer"
-              className="block w-full text-center py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded transition duration-150 ease-in-out"
+              className="block text-center py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded transition duration-150 ease-in-out"
             >
               Download
             </a>
@@ -776,6 +814,107 @@ export function EnhancedFinalResults({ outputs: initialOutputs, jobId }) {
         {jobId && <QualityMetrics jobId={jobId} />}
       </div>
     </>
+  );
+}
+
+// Component to display detailed processing information
+export function ProcessingDetails({ jobStatus }) {
+  if (!jobStatus) return null;
+  
+  // Extract different types of details
+  const uploadDetails = jobStatus.upload_details || {};
+  const elementDetails = jobStatus.element_details || {};
+  const bigDetails = jobStatus.big_details || {};
+  const mosaicPlanning = jobStatus.mosaic_planning || {};
+  const generationInfo = jobStatus.generation_info || {};
+  
+  return (
+    <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+      <h3 className="text-lg font-medium mb-4 text-gray-900">Processing Details</h3>
+      
+      {/* Upload Information */}
+      {Object.keys(uploadDetails).length > 0 && (
+        <div className="mb-6">
+          <h4 className="text-md font-medium mb-2 text-gray-800 border-b pb-1">Upload Information</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm"><span className="font-medium">Element Image:</span> {uploadDetails.element_filename}</p>
+              <p className="text-sm"><span className="font-medium">Size:</span> {uploadDetails.element_filesize_kb?.toFixed(2)} KB</p>
+              <p className="text-sm"><span className="font-medium">Dimensions:</span> {uploadDetails.element_dimensions}</p>
+            </div>
+            <div>
+              <p className="text-sm"><span className="font-medium">Target Image:</span> {uploadDetails.big_filename}</p>
+              <p className="text-sm"><span className="font-medium">Size:</span> {uploadDetails.big_filesize_kb?.toFixed(2)} KB</p>
+              <p className="text-sm"><span className="font-medium">Dimensions:</span> {uploadDetails.big_dimensions}</p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Element and Target Image Details */}
+      {(Object.keys(elementDetails).length > 0 || Object.keys(bigDetails).length > 0) && (
+        <div className="mb-6">
+          <h4 className="text-md font-medium mb-2 text-gray-800 border-b pb-1">Image Processing</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {Object.keys(elementDetails).length > 0 && (
+              <div className="bg-gray-50 p-3 rounded">
+                <p className="text-sm font-medium mb-1">Element Image Details:</p>
+                <p className="text-xs"><span className="font-medium">Original Size:</span> {elementDetails.original_dimensions}</p>
+                <p className="text-xs"><span className="font-medium">Processed Size:</span> {elementDetails.resized_dimensions?.[0]}×{elementDetails.resized_dimensions?.[1]}</p>
+                <p className="text-xs"><span className="font-medium">Pixel Count:</span> {elementDetails.pixel_count?.toLocaleString()}</p>
+                <p className="text-xs"><span className="font-medium">Color Mode:</span> {elementDetails.color_mode}</p>
+                <p className="text-xs"><span className="font-medium">Memory Usage:</span> {elementDetails.memory_usage_mb?.toFixed(2)} MB</p>
+              </div>
+            )}
+            
+            {Object.keys(bigDetails).length > 0 && (
+              <div className="bg-gray-50 p-3 rounded">
+                <p className="text-sm font-medium mb-1">Target Image Details:</p>
+                <p className="text-xs"><span className="font-medium">Original Size:</span> {bigDetails.original_dimensions}</p>
+                <p className="text-xs"><span className="font-medium">Processed Size:</span> {bigDetails.resized_dimensions?.[0]}×{bigDetails.resized_dimensions?.[1]}</p>
+                <p className="text-xs"><span className="font-medium">Pixel Count:</span> {bigDetails.pixel_count?.toLocaleString()}</p>
+                <p className="text-xs"><span className="font-medium">Color Mode:</span> {bigDetails.color_mode}</p>
+                <p className="text-xs"><span className="font-medium">Memory Usage:</span> {bigDetails.memory_usage_mb?.toFixed(2)} MB</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      
+      {/* Mosaic Planning */}
+      {Object.keys(mosaicPlanning).length > 0 && (
+        <div className="mb-6">
+          <h4 className="text-md font-medium mb-2 text-gray-800 border-b pb-1">Mosaic Configuration</h4>
+          <div className="bg-gray-50 p-3 rounded">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <p className="text-sm"><span className="font-medium">Block Size:</span> {mosaicPlanning.block_size}×{mosaicPlanning.block_size}</p>
+              <p className="text-sm"><span className="font-medium">Grid Dimensions:</span> {mosaicPlanning.grid_dimensions}</p>
+              <p className="text-sm"><span className="font-medium">Total Blocks:</span> {mosaicPlanning.total_blocks?.toLocaleString()}</p>
+              <p className="text-sm"><span className="font-medium">Estimated Output Size:</span> {mosaicPlanning.estimated_output_dimensions}</p>
+              <p className="text-sm"><span className="font-medium">Adjustments:</span> {mosaicPlanning.adjusted_dimensions}</p>
+              <p className="text-sm"><span className="font-medium">Memory Usage:</span> {mosaicPlanning.estimated_memory_usage_mb?.toFixed(2)} MB</p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Generation Information */}
+      {Object.keys(generationInfo).length > 0 && (
+        <div>
+          <h4 className="text-md font-medium mb-2 text-gray-800 border-b pb-1">Generation Statistics</h4>
+          <div className="bg-gray-50 p-3 rounded">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <p className="text-sm"><span className="font-medium">Processing Time:</span> {generationInfo.processing_time_sec} seconds</p>
+              <p className="text-sm"><span className="font-medium">Algorithm:</span> {generationInfo.algorithm}</p>
+              <p className="text-sm"><span className="font-medium">Element Shape:</span> {generationInfo.element_shape?.join('×')}</p>
+              <p className="text-sm"><span className="font-medium">Target Shape:</span> {generationInfo.target_shape?.join('×')}</p>
+              <p className="text-sm"><span className="font-medium">Output Shape:</span> {generationInfo.output_shape?.join('×')}</p>
+              <p className="text-sm"><span className="font-medium">Memory Usage:</span> {generationInfo.memory_usage_mb?.toFixed(2)} MB</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
